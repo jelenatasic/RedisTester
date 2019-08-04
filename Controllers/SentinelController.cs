@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using StackExchange.Redis;
+using Microsoft.Extensions.Options;
+using RedisTester.Helpers;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -9,22 +10,31 @@ namespace RedisTester.Controllers
     [Route("api/sentinel")]
     public class SentinelController : Controller
     {
+        private SentinelConfiguration sentinelConfiguration;
+
+        public SentinelController(IOptions<SentinelConfiguration> config)
+        {
+            sentinelConfiguration = config.Value;
+        }
+
         // GET: api/sentinel
         [HttpGet]
         public IEnumerable<string> Get()
         {
-            //ConfigurationOptions option = new ConfigurationOptions
-            //{
-            //    AbortOnConnectFail = false,
-            //    EndPoints = { "localhost" }
-            //};
+            if (!SentinelHelper.IsConfigValid(sentinelConfiguration))
+            {
+                return new string[] {
+                    "Sentinel is not configured OK."
+                };
+            }
 
-            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
+            var connection = ConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
 
-            IDatabase db = redis.GetDatabase();
-            db.StringSet("test", "fuck the police");
+            var SRDB = connection.GetDatabase();
 
-            return new string[] { "value1", "value2" };
+            return new string[] {
+                "Success."
+            };
         }
 
         // GET api/sentinel/5
