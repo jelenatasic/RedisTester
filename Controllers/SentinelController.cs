@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using RedisTester.Helpers;
+using RedisTester.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -17,24 +18,31 @@ namespace RedisTester.Controllers
             sentinelConfiguration = config.Value;
         }
 
-        // GET: api/sentinel
         [HttpGet]
-        public IEnumerable<string> Get()
+        [Route("basic/{testLoad}")]
+        public TestResults GetBasic(int testLoad)
         {
+            TestResults testResult = new TestResults(testLoad);
+
             if (!SentinelHelper.IsConfigValid(sentinelConfiguration))
             {
-                return new string[] {
-                    "Sentinel is not configured OK."
-                };
+                testResult.TestStatus = "Sentinel is not configured OK. Test failed.";
+                return testResult;
             }
 
+            // Database access
             var connection = ConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
+            var SentinelRDB = connection.GetDatabase();
 
-            var SRDB = connection.GetDatabase();
+            //--- STRING TEST ---
+            testResult.BasicStringTest(SentinelRDB);
 
-            return new string[] {
-                "Success."
-            };
+            //--- STRING TEST ---
+            testResult.BasicListTest(SentinelRDB);
+
+            testResult.TestStatus = "Successfull test.";
+
+            return testResult;
         }
 
         // GET api/sentinel/5
