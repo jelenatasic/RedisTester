@@ -114,6 +114,12 @@ namespace RedisTester.Controllers
 
             Thread[] clientThreads = new Thread[sentinelConfiguration.ParallelClientCount];
 
+            var connection = SentinelConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
+
+            // Start thread that will shutdown master at some point
+            var masterFailThread = new Thread(() => TestHelper.SimulateMasterFail(connection, testLoad));
+            masterFailThread.Start();
+
 
             for (int i = 0; i < sentinelConfiguration.ParallelClientCount; i++)
             {
@@ -122,17 +128,6 @@ namespace RedisTester.Controllers
                 clientThreads[i] = new Thread(() => TestHelper.ParralelClientWork(clientConnectionMultiplexer, testResult));
 
                 clientThreads[i].Start();
-
-                // set in motion failover
-                if (i == (int)sentinelConfiguration.ParallelClientCount/2)
-                {
-                    // Database access
-                    var connection = SentinelConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
-
-                    // Start thread that will shutdown master at some point
-                    var masterFailThread = new Thread(() => TestHelper.SimulateMasterFail(connection, testLoad));
-                    masterFailThread.Start();
-                }
             }
 
             for (int i = 0; i < sentinelConfiguration.ParallelClientCount; i++)

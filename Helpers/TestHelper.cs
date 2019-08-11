@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
-using RedisTester.Models;
+
 using StackExchange.Redis;
+using RedisTester.Models;
+
 
 namespace RedisTester.Helpers
 {
@@ -123,7 +124,7 @@ namespace RedisTester.Helpers
                                                 testResult.TestLoadPerThread,
                                                 stopWatch.ElapsedMilliseconds));
 
-            testResult.TestParams.CleanUpTime = stopWatch.ElapsedMilliseconds;
+            testResult.TestParams.RemoveTime = stopWatch.ElapsedMilliseconds;
 
             return testResult;
         }
@@ -141,7 +142,7 @@ namespace RedisTester.Helpers
                 testResults.TestParams.WriteTime += threadTestResult.TestParams.WriteTime;
                 testResults.TestParams.ReadTime += threadTestResult.TestParams.ReadTime;
                 testResults.TestParams.UpdateTime += threadTestResult.TestParams.UpdateTime;
-                testResults.TestParams.CleanUpTime += threadTestResult.TestParams.CleanUpTime;
+                testResults.TestParams.RemoveTime += threadTestResult.TestParams.RemoveTime;
 
                 testResults.TestDetails.AddRange(threadTestResult.TestDetails);
             }
@@ -161,7 +162,7 @@ namespace RedisTester.Helpers
             results.TestParams.WriteTime /= parallelClients;
             results.TestParams.ReadTime /= parallelClients;
             results.TestParams.UpdateTime /= parallelClients;
-            results.TestParams.CleanUpTime /= parallelClients;
+            results.TestParams.RemoveTime /= parallelClients;
         }
     }
 }
