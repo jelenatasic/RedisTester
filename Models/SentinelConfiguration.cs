@@ -9,6 +9,10 @@ namespace RedisTester.Helpers
         public List<Address> SentinelAddresses { get; set; }
 
         public string Password { get; set; }
+
+        public int ParallelClientCount { get; set; }
+
+        public int ConnectTimeout { get; set; }
     }
 
     public class Address

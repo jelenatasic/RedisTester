@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace RedisTester.Models
 {
@@ -7,33 +8,24 @@ namespace RedisTester.Models
         [JsonProperty("testStatus")]
         public string TestStatus { get; set; }
 
+        [JsonProperty("testDetails")]
+        public List<string> TestDetails { get; set; }
+
         [JsonProperty("testLoad")]
-        public int TestLoad { get; set; }
+        public int TestLoadPerThread { get; set; }
 
-        [JsonProperty("stringTest")]
-        public TestParams StringTest { get; set; }
-
-        [JsonProperty("listTest")]
-        public TestParams ListTest { get; set; }
-
-        [JsonProperty("setTest")]
-        public TestParams SetTest { get; set; }
-
-        [JsonProperty("sortedSetTest")]
-        public TestParams SortedSetTest { get; set; }
-
-        [JsonProperty("hashTest")]
-        public TestParams HashTest { get; set; }
+        public TestParams TestParams { get; set; }
 
         public TestResults(int testLoad)
         {
-            this.TestLoad = testLoad;
+            this.TestLoadPerThread = testLoad;
+            this.TestDetails = new List<string>();
+        }
 
-            this.StringTest = new TestParams();
-            this.ListTest = new TestParams();
-            this.SetTest = new TestParams();
-            this.SortedSetTest = new TestParams();
-            this.HashTest = new TestParams();
+        public TestResults(string testStatus)
+        {
+            this.TestStatus = testStatus;
+            this.TestDetails = new List<string>();
         }
 
     }
@@ -51,9 +43,6 @@ namespace RedisTester.Models
 
         [JsonProperty("cleanUpTime")]
         public long CleanUpTime { get; set; }
-
-        [JsonProperty("lostWriteCount")]
-        public int LostWriteCount { get; set; }
     }
 
 }
