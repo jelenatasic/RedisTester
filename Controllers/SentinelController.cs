@@ -81,7 +81,7 @@ namespace RedisTester.Controllers
             {
                 var clientConnectionMultiplexer = SentinelConfigurationHelper.GetSentinelRDBConnectionForClinet(sentinelConfiguration);
 
-                clientThreads[i] = new Thread(() => TestHelper.ParralelClientWork(clientConnectionMultiplexer, testResult));
+                clientThreads[i] = new Thread(() => TestHelper.ParralelClientWork(clientConnectionMultiplexer, TestDataType.RedisString, testResult));
 
                 clientThreads[i].Start();
             }
@@ -125,7 +125,7 @@ namespace RedisTester.Controllers
             {
                 var clientConnectionMultiplexer = SentinelConfigurationHelper.GetSentinelRDBConnectionForClinet(sentinelConfiguration);
 
-                clientThreads[i] = new Thread(() => TestHelper.ParralelClientWork(clientConnectionMultiplexer, testResult));
+                clientThreads[i] = new Thread(() => TestHelper.ParralelClientWork(clientConnectionMultiplexer, TestDataType.RedisString, testResult));
 
                 clientThreads[i].Start();
             }
@@ -144,6 +144,132 @@ namespace RedisTester.Controllers
             return testResult;
         }
 
+        [HttpGet]
+        [Route("basic/listtest/{testLoad}")]
+        public TestResults BasicListTest(int testLoad)
+        {
+            if (!SentinelConfigurationHelper.IsSentinelConfigValid(sentinelConfiguration))
+            {
+                TestResults tr = new TestResults("Sentinel is not configured OK. Test failed.");
+                return tr;
+            }
+
+            // Database access
+            var connection = SentinelConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
+
+            // Test
+            var testResult = TestHelper.BasicListTest(connection, testLoad);
+
+            testResult.TestStatus = "Successfull test. Test performed by one client.";
+
+            return testResult;
+        }
+
+        [HttpGet]
+        [Route("basic/listtest/failover/{testLoad}")]
+        public TestResults BasicListTestFailover(int testLoad)
+        {
+            if (!SentinelConfigurationHelper.IsSentinelConfigValid(sentinelConfiguration))
+            {
+                TestResults tr = new TestResults("Sentinel is not configured OK. Test failed.");
+                return tr;
+            }
+
+            // Database access
+            var connection = SentinelConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
+
+            // Start thread that will shutdown master at some point
+            var masterFailThread = new Thread(() => TestHelper.SimulateMasterFail(connection, testLoad));
+            masterFailThread.Start();
+
+            // Test
+            var testResult = TestHelper.BasicListTest(connection, testLoad);
+
+            testResult.TestStatus = "Successfull test. Test performed by one client.";
+
+            return testResult;
+        }
+
+        [HttpGet]
+        [Route("parallel/listtest/{testLoad}")]
+        public TestResults GetParallelListTest(int testLoad)
+        {
+            TestResults testResult = new TestResults(testLoad);
+
+            if (!SentinelConfigurationHelper.IsSentinelConfigValid(sentinelConfiguration))
+            {
+                testResult.TestStatus = "Sentinel is not configured OK. Test failed.";
+                return testResult;
+            }
+
+            Thread[] clientThreads = new Thread[sentinelConfiguration.ParallelClientCount];
+
+            for (int i = 0; i < sentinelConfiguration.ParallelClientCount; i++)
+            {
+                var clientConnectionMultiplexer = SentinelConfigurationHelper.GetSentinelRDBConnectionForClinet(sentinelConfiguration);
+
+                clientThreads[i] = new Thread(() => TestHelper.ParralelClientWork(clientConnectionMultiplexer, TestDataType.RedisList, testResult));
+
+                clientThreads[i].Start();
+            }
+
+            for (int i = 0; i < sentinelConfiguration.ParallelClientCount; i++)
+            {
+                clientThreads[i].Join();
+            }
+
+            TestHelper.AvrageOutResult(testResult, sentinelConfiguration.ParallelClientCount);
+
+            testResult.TestStatus = string.Format("Parallel test successfull. Parallel client count: {0}. Total test load: {1}. Results are avraged out per client.",
+                                                    sentinelConfiguration.ParallelClientCount,
+                                                    sentinelConfiguration.ParallelClientCount * testLoad);
+
+            return testResult;
+        }
+
+        [HttpGet]
+        [Route("parallel/listtest/failover/{testLoad}")]
+        public TestResults GetParallelListTestFailover(int testLoad)
+        {
+            TestResults testResult = new TestResults(testLoad);
+
+            if (!SentinelConfigurationHelper.IsSentinelConfigValid(sentinelConfiguration))
+            {
+                testResult.TestStatus = "Sentinel is not configured OK. Test failed.";
+                return testResult;
+            }
+
+            Thread[] clientThreads = new Thread[sentinelConfiguration.ParallelClientCount];
+
+            var connection = SentinelConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
+
+            // Start thread that will shutdown master at some point
+            var masterFailThread = new Thread(() => TestHelper.SimulateMasterFail(connection, testLoad));
+            masterFailThread.Start();
+
+
+            for (int i = 0; i < sentinelConfiguration.ParallelClientCount; i++)
+            {
+                var clientConnectionMultiplexer = SentinelConfigurationHelper.GetSentinelRDBConnectionForClinet(sentinelConfiguration);
+
+                clientThreads[i] = new Thread(() => TestHelper.ParralelClientWork(clientConnectionMultiplexer, TestDataType.RedisList, testResult));
+
+                clientThreads[i].Start();
+            }
+
+            for (int i = 0; i < sentinelConfiguration.ParallelClientCount; i++)
+            {
+                clientThreads[i].Join();
+            }
+
+            TestHelper.AvrageOutResult(testResult, sentinelConfiguration.ParallelClientCount);
+
+            testResult.TestStatus = string.Format("Parallel test successfull. Parallel client count: {0}. Total test load: {1}. Results are avraged out per client.",
+                                                    sentinelConfiguration.ParallelClientCount,
+                                                    sentinelConfiguration.ParallelClientCount * testLoad);
+
+            return testResult;
+        }
 
         [HttpGet]
         [Route("flush")]
