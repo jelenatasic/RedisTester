@@ -4,22 +4,41 @@ using System.Threading;
 
 using StackExchange.Redis;
 using RedisTester.Models;
-
+using RedisTester.Interfaces;
 
 namespace RedisTester.Helpers
 {
-    public enum TestDataType
+    public abstract class BasicTestHelper : ITest
     {
-        RedisString,
-        RedisList,
-        RedisSet,
-        RedisSortedSet,
-        RedisHash
+        protected ConnectionMultiplexer connectionMultiplexer { get; set; }
+
+        public void RunParallelTest(TestResults testResults)
+        {
+            var threadTestResult = RunTest(testResults.TestLoadPerThread);
+            
+
+            lock (testResults)
+            {
+                testResults.TestParams.WriteTime += threadTestResult.TestParams.WriteTime;
+                testResults.TestParams.ReadTime += threadTestResult.TestParams.ReadTime;
+                testResults.TestParams.UpdateTime += threadTestResult.TestParams.UpdateTime;
+                testResults.TestParams.RemoveTime += threadTestResult.TestParams.RemoveTime;
+
+                testResults.TestDetails.AddRange(threadTestResult.TestDetails);
+            }
+        }
+
+        public abstract TestResults RunTest(int testLoad);
     }
 
-    public static class TestHelper
+    public class StringTestHelper : BasicTestHelper
     {
-        public static TestResults BasicStringTest(ConnectionMultiplexer connectionMultiplexer, int testLoad)
+        public StringTestHelper(ConnectionMultiplexer connectionMultiplexer)
+        {
+            this.connectionMultiplexer = connectionMultiplexer;
+        }
+
+        public override TestResults RunTest(int testLoad)
         {
             TestResults testResult = new TestResults(testLoad);
             string keyPrefix = "thread:" + Thread.CurrentThread.ManagedThreadId + ":key:";
@@ -92,7 +111,7 @@ namespace RedisTester.Helpers
                     {
                         SenitnelMonitoredDB.StringDecrement(keyPrefix + i.ToString(), i % 10, CommandFlags.DemandMaster);
                     }
-                    
+
                 }
                 catch (RedisConnectionException e)
                 {
@@ -137,8 +156,16 @@ namespace RedisTester.Helpers
 
             return testResult;
         }
+    }
 
-        public static TestResults BasicListTest(ConnectionMultiplexer connectionMultiplexer, int testLoad)
+    public class ListTestHelper : BasicTestHelper
+    {
+        public ListTestHelper(ConnectionMultiplexer connectionMultiplexer)
+        {
+            this.connectionMultiplexer = connectionMultiplexer;
+        }
+
+        public override TestResults RunTest(int testLoad)
         {
             TestResults testResult = new TestResults(testLoad);
             string keyPrefix = "thread:" + Thread.CurrentThread.ManagedThreadId + ":key:";
@@ -198,9 +225,9 @@ namespace RedisTester.Helpers
                         {
                             SenitnelMonitoredDB.ListGetByIndex(keyPrefix + (i % numberOfLists).ToString(), (int)Math.Truncate(listLength * 0.5));
                         }
-                        
+
                     }
-                    
+
                 }
                 catch (RedisConnectionException e)
                 {
@@ -235,11 +262,11 @@ namespace RedisTester.Helpers
 
                     if (i % 2 == 0)
                     {
-                        SenitnelMonitoredDB.ListTrim(keyPrefix + (i % numberOfLists).ToString(), 0, (int) Math.Truncate(listLength * 0.5));
+                        SenitnelMonitoredDB.ListTrim(keyPrefix + (i % numberOfLists).ToString(), 0, (int)Math.Truncate(listLength * 0.5));
                     }
                     else
                     {
-                        SenitnelMonitoredDB.ListSetByIndex(keyPrefix + (i % numberOfLists).ToString(), (int) Math.Truncate(listLength * 0.5), rnd.Next());
+                        SenitnelMonitoredDB.ListSetByIndex(keyPrefix + (i % numberOfLists).ToString(), (int)Math.Truncate(listLength * 0.5), rnd.Next());
                     }
                 }
                 catch (RedisConnectionException e)
@@ -285,39 +312,10 @@ namespace RedisTester.Helpers
 
             return testResult;
         }
+    }
 
-        public static void ParralelClientWork(ConnectionMultiplexer clientConnectionMultiplexer, TestDataType redisDataType, TestResults testResults)
-        {
-            TestResults threadTestResult;
-            switch (redisDataType)
-            {
-                case TestDataType.RedisString:
-                    {
-                        threadTestResult = BasicStringTest(clientConnectionMultiplexer, testResults.TestLoadPerThread);
-                        break;
-                    }
-                case TestDataType.RedisList:
-                    {
-                        threadTestResult = BasicListTest(clientConnectionMultiplexer, testResults.TestLoadPerThread);
-                        break;
-                    }
-                default:
-                    {
-                        throw new Exception("Unsupported data type");
-                    }
-            }
-
-            lock (testResults)
-            {
-                testResults.TestParams.WriteTime += threadTestResult.TestParams.WriteTime;
-                testResults.TestParams.ReadTime += threadTestResult.TestParams.ReadTime;
-                testResults.TestParams.UpdateTime += threadTestResult.TestParams.UpdateTime;
-                testResults.TestParams.RemoveTime += threadTestResult.TestParams.RemoveTime;
-
-                testResults.TestDetails.AddRange(threadTestResult.TestDetails);
-            }
-        }
-
+    public static class TestHelper
+    {
         public static void SimulateMasterFail(ConnectionMultiplexer connection, int testload)
         {
             Random rnd = new Random(DateTime.Now.Millisecond);
