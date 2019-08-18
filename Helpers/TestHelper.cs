@@ -504,6 +504,163 @@ namespace RedisTester.Helpers
         }
     }
 
+    public class HashTestHelper : BasicTestHelper
+    {
+        public HashTestHelper(ConnectionMultiplexer connectionMultiplexer)
+        {
+            this.connectionMultiplexer = connectionMultiplexer;
+        }
+
+        public override TestResults RunTest(int testLoad)
+        {
+            TestResults testResult = new TestResults(testLoad);
+            string keyPrefix = "thread:" + Thread.CurrentThread.ManagedThreadId + ":key:";
+            var SenitnelMonitoredDB = connectionMultiplexer.GetDatabase();
+            Random rnd = new Random(DateTime.Now.Millisecond);
+
+            // 2.Database write load
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            var hashEntriesCount = 5;
+
+            for (int i = 1; i <= testResult.TestLoadPerThread; i++)
+            {
+                try
+                {
+                    HashEntry[] hashEntries = new HashEntry[hashEntriesCount];
+
+                    for (int h= 1; h < hashEntriesCount; h++)
+                    {
+                        hashEntries[h] = new HashEntry("HE" + h.ToString(), rnd.Next());
+                    }
+
+                    SenitnelMonitoredDB.HashSet(keyPrefix + i.ToString(), hashEntries);
+                }
+                catch (RedisConnectionException e)
+                {
+                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                }
+            }
+
+            stopWatch.Stop();
+
+            testResult.TestDetails.Add(String.Format("Client {0} : Added hashes to RDB {1}1 - {1}{2}. Time: {3}ms.",
+                                                Thread.CurrentThread.ManagedThreadId,
+                                                keyPrefix,
+                                                testResult.TestLoadPerThread,
+                                                stopWatch.ElapsedMilliseconds));
+
+            testResult.TestParams.WriteTime = stopWatch.ElapsedMilliseconds;
+
+            // 3.Database read load
+            stopWatch.Restart();
+
+            for (int i = 1; i <= testResult.TestLoadPerThread; i++)
+            {
+                try
+                {
+                    if (i % 2 == 0)
+                    {
+                        var retreivedValue = SenitnelMonitoredDB.HashGetAll(keyPrefix + i.ToString());
+                    }
+                    else
+                    {
+                        var hashKeys = SenitnelMonitoredDB.HashKeys(keyPrefix + i.ToString());
+
+                        if (hashKeys.Length > 0)
+                        {
+                            var data = SenitnelMonitoredDB.HashGet(keyPrefix + i.ToString(), hashKeys[rnd.Next() % hashKeys.Length]);
+                        }
+                    }
+
+                }
+                catch (RedisConnectionException e)
+                {
+                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                }
+            }
+
+            stopWatch.Stop();
+
+            testResult.TestDetails.Add(String.Format("Client {0} : Made {1} read requests. Time: {2}ms.",
+                                                Thread.CurrentThread.ManagedThreadId,
+                                                testResult.TestLoadPerThread,
+                                                stopWatch.ElapsedMilliseconds));
+
+            testResult.TestParams.ReadTime = stopWatch.ElapsedMilliseconds;
+
+            // 4.Update exiting values
+
+            stopWatch.Restart();
+
+            for (int i = 1; i <= testResult.TestLoadPerThread; i++)
+            {
+                try
+                {
+                    var hashKeys = SenitnelMonitoredDB.HashKeys(keyPrefix + i.ToString());
+
+                    if (hashKeys.Length == 0)
+                    {
+                        SenitnelMonitoredDB.HashSet(keyPrefix + i.ToString(), new HashEntry[] 
+                                                    { new HashEntry(rnd.Next(), rnd.Next()), new HashEntry(rnd.Next(), rnd.Next())});
+                        continue;
+                    }
+
+                    if (i % 2 == 0)
+                    {
+                        SenitnelMonitoredDB.HashDelete(keyPrefix + i.ToString(), hashKeys[rnd.Next() % hashKeys.Length]);
+                    }
+                    else
+                    {
+                        SenitnelMonitoredDB.HashSet(keyPrefix + i.ToString(), new HashEntry[] { new HashEntry(hashKeys[rnd.Next() % hashKeys.Length], rnd.Next()) });
+                    }
+                }
+                catch (RedisConnectionException e)
+                {
+                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                }
+            }
+
+            stopWatch.Stop();
+
+            testResult.TestDetails.Add(String.Format("Client {0} : Updated keys to RDB {1}1 - {1}{2} using hash key delete and hash key set. Time: {3}ms.",
+                                                Thread.CurrentThread.ManagedThreadId,
+                                                keyPrefix,
+                                                testResult.TestLoadPerThread,
+                                                stopWatch.ElapsedMilliseconds));
+
+            testResult.TestParams.UpdateTime = stopWatch.ElapsedMilliseconds;
+
+            // 4.Database delete load
+            stopWatch.Restart();
+
+            for (int i = 1; i <= testResult.TestLoadPerThread; i++)
+            {
+                try
+                {
+                    SenitnelMonitoredDB.KeyDelete(keyPrefix + i.ToString(), CommandFlags.DemandMaster);
+                }
+                catch (RedisConnectionException e)
+                {
+                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                }
+            }
+
+            stopWatch.Stop();
+
+            testResult.TestDetails.Add(String.Format("Client {0} : Removed keys from RDB {1}1 - {1}{2}. Time: {3}ms.",
+                                                Thread.CurrentThread.ManagedThreadId,
+                                                keyPrefix,
+                                                testResult.TestLoadPerThread,
+                                                stopWatch.ElapsedMilliseconds));
+
+            testResult.TestParams.RemoveTime = stopWatch.ElapsedMilliseconds;
+
+            return testResult;
+        }
+    }
+
     public static class TestHelper
     {
         public static void SimulateMasterFail(ConnectionMultiplexer connection, int testload)

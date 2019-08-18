@@ -56,6 +56,11 @@ namespace RedisTester.Controllers
                         testHelper = new SetTestHelper(connection, true);
                         break;
                     }
+                case "hash":
+                    {
+                        testHelper = new HashTestHelper(connection);
+                        break;
+                    }
                 default:
                     {
                         TestResults tr = new TestResults("Unknown redis data type.");
@@ -112,6 +117,11 @@ namespace RedisTester.Controllers
                         testHelper = new SetTestHelper(connection, true);
                         break;
                     }
+                case "hash":
+                    {
+                        testHelper = new HashTestHelper(connection);
+                        break;
+                    }
                 default:
                     {
                         TestResults tr = new TestResults("Unknown redis data type.");
@@ -139,7 +149,7 @@ namespace RedisTester.Controllers
             }
 
             Thread[] clientThreads = new Thread[sentinelConfiguration.ParallelClientCount];
-            BasicTestHelper[] testHelpers = new BasicTestHelper[sentinelConfiguration.ParallelClientCount];
+            ITest[] testHelpers = new BasicTestHelper[sentinelConfiguration.ParallelClientCount];
 
             for (int i = 0; i < sentinelConfiguration.ParallelClientCount; i++)
             {
@@ -165,6 +175,11 @@ namespace RedisTester.Controllers
                     case "sortedset":
                         {
                             testHelpers[i] = new SetTestHelper(clientConnectionMultiplexer, true);
+                            break;
+                        }
+                    case "hash":
+                        {
+                            testHelpers[i] = new HashTestHelper(clientConnectionMultiplexer);
                             break;
                         }
                     default:
@@ -209,7 +224,7 @@ namespace RedisTester.Controllers
             }
 
             Thread[] clientThreads = new Thread[sentinelConfiguration.ParallelClientCount];
-            BasicTestHelper[] testHelpers = new BasicTestHelper[sentinelConfiguration.ParallelClientCount];
+            ITest[] testHelpers = new BasicTestHelper[sentinelConfiguration.ParallelClientCount];
 
             var connection = SentinelConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
 
@@ -241,6 +256,11 @@ namespace RedisTester.Controllers
                     case "sortedset":
                         {
                             testHelpers[i] = new SetTestHelper(clientConnectionMultiplexer, true);
+                            break;
+                        }
+                    case "hash":
+                        {
+                            testHelpers[i] = new HashTestHelper(clientConnectionMultiplexer);
                             break;
                         }
                     default:
