@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
 using RedisTester.Helpers;
+using RedisTester.Interfaces;
 using RedisTester.Models;
 
 namespace RedisTester.Controllers
@@ -31,7 +32,7 @@ namespace RedisTester.Controllers
             var connection = SentinelConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
 
             // Test
-            BasicTestHelper testHelper;
+            ITest testHelper;
 
             switch (datatype.ToLower())
             {
@@ -43,6 +44,16 @@ namespace RedisTester.Controllers
                 case "list":
                     {
                         testHelper = new ListTestHelper(connection);
+                        break;
+                    }
+                case "set":
+                    {
+                        testHelper = new SetTestHelper(connection, false);
+                        break;
+                    }
+                case "sortedset":
+                    {
+                        testHelper = new SetTestHelper(connection, true);
                         break;
                     }
                 default:
@@ -77,7 +88,7 @@ namespace RedisTester.Controllers
             masterFailThread.Start();
 
             // Test
-            BasicTestHelper testHelper;
+            ITest testHelper;
 
             switch (datatype.ToLower())
             {
@@ -89,6 +100,16 @@ namespace RedisTester.Controllers
                 case "list":
                     {
                         testHelper = new ListTestHelper(connection);
+                        break;
+                    }
+                case "set":
+                    {
+                        testHelper = new SetTestHelper(connection, false);
+                        break;
+                    }
+                case "sortedset":
+                    {
+                        testHelper = new SetTestHelper(connection, true);
                         break;
                     }
                 default:
@@ -136,6 +157,16 @@ namespace RedisTester.Controllers
                             testHelpers[i] = new ListTestHelper(clientConnectionMultiplexer);
                             break;
                         }
+                    case "set":
+                        {
+                            testHelpers[i] = new SetTestHelper(clientConnectionMultiplexer, false);
+                            break;
+                        }
+                    case "sortedset":
+                        {
+                            testHelpers[i] = new SetTestHelper(clientConnectionMultiplexer, true);
+                            break;
+                        }
                     default:
                         {
                             TestResults tr = new TestResults("Unknown redis data type.");
@@ -143,7 +174,9 @@ namespace RedisTester.Controllers
                         }
                 }
 
-                clientThreads[i] = new Thread(() => testHelpers[i].RunParallelTest(testResult));
+                var test = testHelpers[i];
+
+                clientThreads[i] = new Thread(() => test.RunParallelTest(testResult));
 
                 clientThreads[i].Start();
             }
@@ -200,6 +233,16 @@ namespace RedisTester.Controllers
                             testHelpers[i] = new ListTestHelper(clientConnectionMultiplexer);
                             break;
                         }
+                    case "set":
+                        {
+                            testHelpers[i] = new SetTestHelper(clientConnectionMultiplexer, false);
+                            break;
+                        }
+                    case "sortedset":
+                        {
+                            testHelpers[i] = new SetTestHelper(clientConnectionMultiplexer, true);
+                            break;
+                        }
                     default:
                         {
                             TestResults tr = new TestResults("Unknown redis data type.");
@@ -207,7 +250,9 @@ namespace RedisTester.Controllers
                         }
                 }
 
-                clientThreads[i] = new Thread(() => testHelpers[i].RunParallelTest(testResult));
+                var test = testHelpers[i];
+
+                clientThreads[i] = new Thread(() => test.RunParallelTest(testResult));
 
                 clientThreads[i].Start();
             }

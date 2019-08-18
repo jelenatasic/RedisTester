@@ -314,6 +314,196 @@ namespace RedisTester.Helpers
         }
     }
 
+    public class SetTestHelper : BasicTestHelper
+    {
+        private bool SortedSet { get; set; }
+
+        public SetTestHelper(ConnectionMultiplexer connectionMultiplexer, bool sorted)
+        {
+            this.connectionMultiplexer = connectionMultiplexer;
+            this.SortedSet = sorted;
+        }
+
+        public override TestResults RunTest(int testLoad)
+        {
+            TestResults testResult = new TestResults(testLoad);
+            string keyPrefix = "thread:" + Thread.CurrentThread.ManagedThreadId + ":key:";
+            var SenitnelMonitoredDB = connectionMultiplexer.GetDatabase();
+            Random rnd = new Random(DateTime.Now.Millisecond);
+
+            // 2.Database write load
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            var numberOfSets = testResult.TestLoadPerThread > 1000 ? 1000 : testResult.TestLoadPerThread;
+
+            for (int i = 1; i <= testResult.TestLoadPerThread; i++)
+            {
+                try
+                {
+                    if (SortedSet)
+                    {
+                        SenitnelMonitoredDB.SortedSetAdd(keyPrefix + (i % numberOfSets).ToString(), rnd.Next(), rnd.Next());
+                    }
+                    else
+                    {
+                        SenitnelMonitoredDB.SetAdd(keyPrefix + (i % numberOfSets).ToString(), rnd.Next());
+                    } 
+                }
+                catch (RedisConnectionException e)
+                {
+                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                }
+            }
+
+            stopWatch.Stop();
+
+            testResult.TestDetails.Add(String.Format("Client {0} : Added sets to RDB {1}1 - {1}1000. Time: {2}ms.",
+                                                Thread.CurrentThread.ManagedThreadId,
+                                                keyPrefix,
+                                                stopWatch.ElapsedMilliseconds));
+
+            testResult.TestParams.WriteTime = stopWatch.ElapsedMilliseconds;
+
+            // 3.Database read load
+            stopWatch.Restart();
+
+            for (int i = 1; i <= testResult.TestLoadPerThread; i++)
+            {
+                try
+                {
+                    if (i % 2 == 0)
+                    {
+                        var retreivedValue = SenitnelMonitoredDB.SetMembers(keyPrefix + (i % numberOfSets).ToString());
+                    }
+                    else
+                    {
+                        long listLength = SenitnelMonitoredDB.SetLength(keyPrefix + (i % numberOfSets).ToString());
+
+                        if (listLength > 0)
+                        {
+                            SenitnelMonitoredDB.SetRandomMember(keyPrefix + (i % numberOfSets).ToString());
+                        }
+
+                    }
+
+                }
+                catch (RedisConnectionException e)
+                {
+                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                }
+            }
+
+            stopWatch.Stop();
+
+            testResult.TestDetails.Add(String.Format("Client {0} : Made {1} read requests. Time: {2}ms.",
+                                                Thread.CurrentThread.ManagedThreadId,
+                                                testResult.TestLoadPerThread,
+                                                stopWatch.ElapsedMilliseconds));
+
+            testResult.TestParams.ReadTime = stopWatch.ElapsedMilliseconds;
+
+            // 4.Update exiting values
+
+            stopWatch.Restart();
+
+            for (int i = 1; i <= testResult.TestLoadPerThread; i++)
+            {
+                try
+                {
+                    long listLength = SenitnelMonitoredDB.SetLength(keyPrefix + (i % numberOfSets).ToString());
+
+                    if (listLength == 0)
+                    {
+                        if (SortedSet)
+                        {
+                            SenitnelMonitoredDB.SortedSetCombineAndStore(SetOperation.Union,
+                                                        keyPrefix + (i % numberOfSets).ToString(),
+                                                        keyPrefix + (i + 1 % numberOfSets).ToString(),
+                                                        keyPrefix + (i + 2 % numberOfSets).ToString());
+                        }
+                        else
+                        {
+                            SenitnelMonitoredDB.SetCombineAndStore(SetOperation.Union,
+                                                        keyPrefix + (i % numberOfSets).ToString(),
+                                                        keyPrefix + (i + 1 % numberOfSets).ToString(), 
+                                                        keyPrefix + (i + 2 % numberOfSets).ToString());
+
+                        }
+
+                        continue;
+                    }
+                    
+                    if (i % 2 == 0)
+                    {
+                        if (SortedSet)
+                        {
+                            SenitnelMonitoredDB.SortedSetRemove(keyPrefix + (i % numberOfSets).ToString(),
+                                                        SenitnelMonitoredDB.SetRandomMember(keyPrefix + (i % numberOfSets).ToString()));
+                        }
+                        else
+                        {
+                            SenitnelMonitoredDB.SetRemove(keyPrefix + (i % numberOfSets).ToString(),
+                                                        SenitnelMonitoredDB.SetRandomMember(keyPrefix + (i % numberOfSets).ToString()));
+                        }
+                    }
+                    else
+                    {
+                        if (SortedSet)
+                        {
+                            SenitnelMonitoredDB.SortedSetPop(keyPrefix + (i % numberOfSets).ToString());
+                        }
+                        else
+                        {
+                            SenitnelMonitoredDB.SetPop(keyPrefix + (i % numberOfSets).ToString());
+                        }
+                    }
+                }
+                catch (RedisConnectionException e)
+                {
+                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                }
+            }
+
+            stopWatch.Stop();
+
+            testResult.TestDetails.Add(String.Format("Client {0} : Updated keys to RDB {1}1 - {1}{2} using set intersection and set element removal. Time: {3}ms.",
+                                                Thread.CurrentThread.ManagedThreadId,
+                                                keyPrefix,
+                                                numberOfSets,
+                                                stopWatch.ElapsedMilliseconds));
+
+            testResult.TestParams.UpdateTime = stopWatch.ElapsedMilliseconds;
+
+            // 4.Database delete load
+            stopWatch.Restart();
+
+            for (int i = 1; i <= numberOfSets; i++)
+            {
+                try
+                {
+                    SenitnelMonitoredDB.KeyDelete(keyPrefix + i.ToString(), CommandFlags.DemandMaster);
+                }
+                catch (RedisConnectionException e)
+                {
+                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                }
+            }
+
+            stopWatch.Stop();
+
+            testResult.TestDetails.Add(String.Format("Client {0} : Removed keys from RDB {1}1 - {1}{2}. Time: {3}ms.",
+                                                Thread.CurrentThread.ManagedThreadId,
+                                                keyPrefix,
+                                                numberOfSets,
+                                                stopWatch.ElapsedMilliseconds));
+
+            testResult.TestParams.RemoveTime = stopWatch.ElapsedMilliseconds;
+
+            return testResult;
+        }
+    }
+
     public static class TestHelper
     {
         public static void SimulateMasterFail(ConnectionMultiplexer connection, int testload)
