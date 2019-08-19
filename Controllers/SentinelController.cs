@@ -12,24 +12,24 @@ namespace RedisTester.Controllers
     public class SentinelController : Controller
     {
         private SentinelConfiguration sentinelConfiguration;
+        private ConfiguratinHelper sentinelConfigHelper;
 
         public SentinelController(IOptions<SentinelConfiguration> config)
         {
             sentinelConfiguration = config.Value;
+
+            sentinelConfigHelper = new SentinelConfigurationHelper(sentinelConfiguration);
         }
 
         [HttpGet]
         [Route("singleclient/{datatype}/{testLoad}")]
         public TestResults SingleClientTest(string datatype, int testLoad)
         {
-            if (!SentinelConfigurationHelper.IsSentinelConfigValid(sentinelConfiguration))
+            if (!sentinelConfigHelper.IsConfigValid())
             {
                 TestResults tr = new TestResults("Sentinel is not configured OK. Test failed.");
                 return tr;
             }
-
-            // Database access
-            var connection = SentinelConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
 
             // Test
             ITest testHelper;
@@ -38,27 +38,27 @@ namespace RedisTester.Controllers
             {
                 case "string":
                     {
-                        testHelper = new StringTestHelper(connection);
+                        testHelper = new StringTestHelper(sentinelConfigHelper);
                         break;
                     }
                 case "list":
                     {
-                        testHelper = new ListTestHelper(connection);
+                        testHelper = new ListTestHelper(sentinelConfigHelper);
                         break;
                     }
                 case "set":
                     {
-                        testHelper = new SetTestHelper(connection, false);
+                        testHelper = new SetTestHelper(sentinelConfigHelper, false);
                         break;
                     }
                 case "sortedset":
                     {
-                        testHelper = new SetTestHelper(connection, true);
+                        testHelper = new SetTestHelper(sentinelConfigHelper, true);
                         break;
                     }
                 case "hash":
                     {
-                        testHelper = new HashTestHelper(connection);
+                        testHelper = new HashTestHelper(sentinelConfigHelper);
                         break;
                     }
                 default:
@@ -79,17 +79,14 @@ namespace RedisTester.Controllers
         [Route("singleclient/failover/{datatype}/{testLoad}")]
         public TestResults SingleClientFailoverTest(string datatype, int testLoad)
         {
-            if (!SentinelConfigurationHelper.IsSentinelConfigValid(sentinelConfiguration))
+            if (!sentinelConfigHelper.IsConfigValid())
             {
                 TestResults tr = new TestResults("Sentinel is not configured OK. Test failed.");
                 return tr;
             }
 
-            // Database access
-            var connection = SentinelConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
-
             // Start thread that will shutdown master at some point
-            var masterFailThread = new Thread(() => TestHelper.SimulateMasterFail(connection, testLoad));
+            var masterFailThread = new Thread(() => TestHelper.SimulateMasterFail(sentinelConfigHelper, testLoad));
             masterFailThread.Start();
 
             // Test
@@ -99,27 +96,27 @@ namespace RedisTester.Controllers
             {
                 case "string":
                     {
-                        testHelper = new StringTestHelper(connection);
+                        testHelper = new StringTestHelper(sentinelConfigHelper);
                         break;
                     }
                 case "list":
                     {
-                        testHelper = new ListTestHelper(connection);
+                        testHelper = new ListTestHelper(sentinelConfigHelper);
                         break;
                     }
                 case "set":
                     {
-                        testHelper = new SetTestHelper(connection, false);
+                        testHelper = new SetTestHelper(sentinelConfigHelper, false);
                         break;
                     }
                 case "sortedset":
                     {
-                        testHelper = new SetTestHelper(connection, true);
+                        testHelper = new SetTestHelper(sentinelConfigHelper, true);
                         break;
                     }
                 case "hash":
                     {
-                        testHelper = new HashTestHelper(connection);
+                        testHelper = new HashTestHelper(sentinelConfigHelper);
                         break;
                     }
                 default:
@@ -142,7 +139,7 @@ namespace RedisTester.Controllers
         {
             TestResults testResult = new TestResults(testLoad);
 
-            if (!SentinelConfigurationHelper.IsSentinelConfigValid(sentinelConfiguration))
+            if (!sentinelConfigHelper.IsConfigValid())
             {
                 testResult.TestStatus = "Sentinel is not configured OK. Test failed.";
                 return testResult;
@@ -153,33 +150,33 @@ namespace RedisTester.Controllers
 
             for (int i = 0; i < sentinelConfiguration.ParallelClientCount; i++)
             {
-                var clientConnectionMultiplexer = SentinelConfigurationHelper.GetSentinelRDBConnectionForClinet(sentinelConfiguration);
+                var clientConfigurationHelper = new SentinelConfigurationHelper(sentinelConfiguration);
 
                 switch (datatype.ToLower())
                 {
                     case "string":
                         {
-                            testHelpers[i] = new StringTestHelper(clientConnectionMultiplexer);
+                            testHelpers[i] = new StringTestHelper(clientConfigurationHelper);
                             break;
                         }
                     case "list":
                         {
-                            testHelpers[i] = new ListTestHelper(clientConnectionMultiplexer);
+                            testHelpers[i] = new ListTestHelper(clientConfigurationHelper);
                             break;
                         }
                     case "set":
                         {
-                            testHelpers[i] = new SetTestHelper(clientConnectionMultiplexer, false);
+                            testHelpers[i] = new SetTestHelper(clientConfigurationHelper, false);
                             break;
                         }
                     case "sortedset":
                         {
-                            testHelpers[i] = new SetTestHelper(clientConnectionMultiplexer, true);
+                            testHelpers[i] = new SetTestHelper(clientConfigurationHelper, true);
                             break;
                         }
                     case "hash":
                         {
-                            testHelpers[i] = new HashTestHelper(clientConnectionMultiplexer);
+                            testHelpers[i] = new HashTestHelper(clientConfigurationHelper);
                             break;
                         }
                     default:
@@ -217,7 +214,7 @@ namespace RedisTester.Controllers
         {
             TestResults testResult = new TestResults(testLoad);
 
-            if (!SentinelConfigurationHelper.IsSentinelConfigValid(sentinelConfiguration))
+            if (!sentinelConfigHelper.IsConfigValid())
             {
                 testResult.TestStatus = "Sentinel is not configured OK. Test failed.";
                 return testResult;
@@ -226,41 +223,41 @@ namespace RedisTester.Controllers
             Thread[] clientThreads = new Thread[sentinelConfiguration.ParallelClientCount];
             ITest[] testHelpers = new BasicTestHelper[sentinelConfiguration.ParallelClientCount];
 
-            var connection = SentinelConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
+            var connection = sentinelConfigHelper.GetRDBConnection();
 
             // Start thread that will shutdown master at some point
-            var masterFailThread = new Thread(() => TestHelper.SimulateMasterFail(connection, testLoad));
+            var masterFailThread = new Thread(() => TestHelper.SimulateMasterFail(sentinelConfigHelper, testLoad));
             masterFailThread.Start();
 
             for (int i = 0; i < sentinelConfiguration.ParallelClientCount; i++)
             {
-                var clientConnectionMultiplexer = SentinelConfigurationHelper.GetSentinelRDBConnectionForClinet(sentinelConfiguration);
+                var clientConfigurationHelper = new SentinelConfigurationHelper(sentinelConfiguration);
 
                 switch (datatype.ToLower())
                 {
                     case "string":
                         {
-                            testHelpers[i] = new StringTestHelper(clientConnectionMultiplexer);
+                            testHelpers[i] = new StringTestHelper(clientConfigurationHelper);
                             break;
                         }
                     case "list":
                         {
-                            testHelpers[i] = new ListTestHelper(clientConnectionMultiplexer);
+                            testHelpers[i] = new ListTestHelper(clientConfigurationHelper);
                             break;
                         }
                     case "set":
                         {
-                            testHelpers[i] = new SetTestHelper(clientConnectionMultiplexer, false);
+                            testHelpers[i] = new SetTestHelper(clientConfigurationHelper, false);
                             break;
                         }
                     case "sortedset":
                         {
-                            testHelpers[i] = new SetTestHelper(clientConnectionMultiplexer, true);
+                            testHelpers[i] = new SetTestHelper(clientConfigurationHelper, true);
                             break;
                         }
                     case "hash":
                         {
-                            testHelpers[i] = new HashTestHelper(clientConnectionMultiplexer);
+                            testHelpers[i] = new HashTestHelper(clientConfigurationHelper);
                             break;
                         }
                     default:
@@ -295,11 +292,15 @@ namespace RedisTester.Controllers
         [Route("flush")]
         public string Flush()
         {
-            var connection = SentinelConfigurationHelper.GetSentinelRDBConnection(sentinelConfiguration);
+            if (sentinelConfigHelper.IsConfigValid())
+            {
+                if (sentinelConfigHelper.FlushDatabase())
+                {
+                    return "Sentinel DB flushed.";
+                }     
+            }
 
-            SentinelConfigurationHelper.FlushDatabase(connection);
-
-            return "Database flush performed.";
+            return "Ups";
         }
     }
 }

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RedisTester.Helpers;
+using RedisTester.Models;
 
 namespace RedisTester
 {
@@ -24,6 +24,7 @@ namespace RedisTester
             services.AddOptions();
 
             services.Configure<SentinelConfiguration>(Configuration.GetSection("SentinelConfiguration"));
+            services.Configure<ClusterConfiguration>(Configuration.GetSection("ClusterConfiguration"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

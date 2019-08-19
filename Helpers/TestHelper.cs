@@ -10,7 +10,7 @@ namespace RedisTester.Helpers
 {
     public abstract class BasicTestHelper : ITest
     {
-        protected ConnectionMultiplexer connectionMultiplexer { get; set; }
+        protected ConfiguratinHelper configurationHelper { get; set; }
 
         public void RunParallelTest(TestResults testResults)
         {
@@ -33,16 +33,16 @@ namespace RedisTester.Helpers
 
     public class StringTestHelper : BasicTestHelper
     {
-        public StringTestHelper(ConnectionMultiplexer connectionMultiplexer)
+        public StringTestHelper(ConfiguratinHelper configHelper)
         {
-            this.connectionMultiplexer = connectionMultiplexer;
+            this.configurationHelper = configHelper;
         }
 
         public override TestResults RunTest(int testLoad)
         {
             TestResults testResult = new TestResults(testLoad);
             string keyPrefix = "thread:" + Thread.CurrentThread.ManagedThreadId + ":key:";
-            var SenitnelMonitoredDB = connectionMultiplexer.GetDatabase();
+            var redisDB = this.configurationHelper.GetRDBConnection().GetDatabase();
 
             // 2.Database write load
             Stopwatch stopWatch = new Stopwatch();
@@ -52,11 +52,11 @@ namespace RedisTester.Helpers
             {
                 try
                 {
-                    SenitnelMonitoredDB.StringSet(keyPrefix + i.ToString(), i, null, When.Always, CommandFlags.DemandMaster);
+                    redisDB.StringSet(keyPrefix + i.ToString(), i, null, When.Always, CommandFlags.DemandMaster);
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -77,11 +77,11 @@ namespace RedisTester.Helpers
             {
                 try
                 {
-                    var retreivedValue = SenitnelMonitoredDB.StringGet(keyPrefix + i.ToString(), CommandFlags.DemandSlave);
+                    var retreivedValue = redisDB.StringGet(keyPrefix + i.ToString(), CommandFlags.DemandSlave);
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -105,17 +105,17 @@ namespace RedisTester.Helpers
                 {
                     if (rnd.Next() % 2 == 0)
                     {
-                        SenitnelMonitoredDB.StringIncrement(keyPrefix + i.ToString(), i % 10, CommandFlags.DemandMaster);
+                        redisDB.StringIncrement(keyPrefix + i.ToString(), i % 10, CommandFlags.DemandMaster);
                     }
                     else
                     {
-                        SenitnelMonitoredDB.StringDecrement(keyPrefix + i.ToString(), i % 10, CommandFlags.DemandMaster);
+                        redisDB.StringDecrement(keyPrefix + i.ToString(), i % 10, CommandFlags.DemandMaster);
                     }
 
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -136,11 +136,11 @@ namespace RedisTester.Helpers
             {
                 try
                 {
-                    SenitnelMonitoredDB.KeyDelete(keyPrefix + i.ToString(), CommandFlags.DemandMaster);
+                    redisDB.KeyDelete(keyPrefix + i.ToString(), CommandFlags.DemandMaster);
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -160,16 +160,16 @@ namespace RedisTester.Helpers
 
     public class ListTestHelper : BasicTestHelper
     {
-        public ListTestHelper(ConnectionMultiplexer connectionMultiplexer)
+        public ListTestHelper(ConfiguratinHelper configHelper)
         {
-            this.connectionMultiplexer = connectionMultiplexer;
+            this.configurationHelper = configHelper;
         }
 
         public override TestResults RunTest(int testLoad)
         {
             TestResults testResult = new TestResults(testLoad);
             string keyPrefix = "thread:" + Thread.CurrentThread.ManagedThreadId + ":key:";
-            var SenitnelMonitoredDB = connectionMultiplexer.GetDatabase();
+            var redisDB = this.configurationHelper.GetRDBConnection().GetDatabase();
             Random rnd = new Random(DateTime.Now.Millisecond);
 
             // 2.Database write load
@@ -184,16 +184,16 @@ namespace RedisTester.Helpers
                 {
                     if (i % 2 == 0)
                     {
-                        SenitnelMonitoredDB.ListLeftPush(keyPrefix + (i % numberOfLists).ToString(), rnd.Next(), When.Always, CommandFlags.DemandMaster);
+                        redisDB.ListLeftPush(keyPrefix + (i % numberOfLists).ToString(), rnd.Next(), When.Always, CommandFlags.DemandMaster);
                     }
                     else
                     {
-                        SenitnelMonitoredDB.ListRightPush(keyPrefix + (i % numberOfLists).ToString(), rnd.Next(), When.Always, CommandFlags.DemandMaster);
+                        redisDB.ListRightPush(keyPrefix + (i % numberOfLists).ToString(), rnd.Next(), When.Always, CommandFlags.DemandMaster);
                     }
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -215,15 +215,15 @@ namespace RedisTester.Helpers
                 {
                     if (i % 2 == 0)
                     {
-                        var retreivedValue = SenitnelMonitoredDB.ListRange(keyPrefix + (i % numberOfLists).ToString());
+                        var retreivedValue = redisDB.ListRange(keyPrefix + (i % numberOfLists).ToString());
                     }
                     else
                     {
-                        long listLength = SenitnelMonitoredDB.ListLength(keyPrefix + (i % numberOfLists).ToString());
+                        long listLength = redisDB.ListLength(keyPrefix + (i % numberOfLists).ToString());
 
                         if (listLength > 0)
                         {
-                            SenitnelMonitoredDB.ListGetByIndex(keyPrefix + (i % numberOfLists).ToString(), (int)Math.Truncate(listLength * 0.5));
+                            redisDB.ListGetByIndex(keyPrefix + (i % numberOfLists).ToString(), (int)Math.Truncate(listLength * 0.5));
                         }
 
                     }
@@ -231,7 +231,7 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -252,26 +252,26 @@ namespace RedisTester.Helpers
             {
                 try
                 {
-                    long listLength = SenitnelMonitoredDB.ListLength(keyPrefix + (i % numberOfLists).ToString());
+                    long listLength = redisDB.ListLength(keyPrefix + (i % numberOfLists).ToString());
 
                     if (listLength == 0)
                     {
-                        SenitnelMonitoredDB.ListLeftPush(keyPrefix + (i % numberOfLists).ToString(), rnd.Next());
+                        redisDB.ListLeftPush(keyPrefix + (i % numberOfLists).ToString(), rnd.Next());
                         continue;
                     }
 
                     if (i % 2 == 0)
                     {
-                        SenitnelMonitoredDB.ListTrim(keyPrefix + (i % numberOfLists).ToString(), 0, (int)Math.Truncate(listLength * 0.5));
+                        redisDB.ListTrim(keyPrefix + (i % numberOfLists).ToString(), 0, (int)Math.Truncate(listLength * 0.5));
                     }
                     else
                     {
-                        SenitnelMonitoredDB.ListSetByIndex(keyPrefix + (i % numberOfLists).ToString(), (int)Math.Truncate(listLength * 0.5), rnd.Next());
+                        redisDB.ListSetByIndex(keyPrefix + (i % numberOfLists).ToString(), (int)Math.Truncate(listLength * 0.5), rnd.Next());
                     }
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -292,11 +292,11 @@ namespace RedisTester.Helpers
             {
                 try
                 {
-                    SenitnelMonitoredDB.KeyDelete(keyPrefix + i.ToString(), CommandFlags.DemandMaster);
+                    redisDB.KeyDelete(keyPrefix + i.ToString(), CommandFlags.DemandMaster);
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -318,17 +318,17 @@ namespace RedisTester.Helpers
     {
         private bool SortedSet { get; set; }
 
-        public SetTestHelper(ConnectionMultiplexer connectionMultiplexer, bool sorted)
+        public SetTestHelper(ConfiguratinHelper configHelper, bool sorted)
         {
-            this.connectionMultiplexer = connectionMultiplexer;
+            this.configurationHelper = configHelper;
             this.SortedSet = sorted;
         }
 
-        public override TestResults RunTest(int testLoad)
+    public override TestResults RunTest(int testLoad)
         {
             TestResults testResult = new TestResults(testLoad);
             string keyPrefix = "thread:" + Thread.CurrentThread.ManagedThreadId + ":key:";
-            var SenitnelMonitoredDB = connectionMultiplexer.GetDatabase();
+            var redisDB = this.configurationHelper.GetRDBConnection().GetDatabase();
             Random rnd = new Random(DateTime.Now.Millisecond);
 
             // 2.Database write load
@@ -343,16 +343,16 @@ namespace RedisTester.Helpers
                 {
                     if (SortedSet)
                     {
-                        SenitnelMonitoredDB.SortedSetAdd(keyPrefix + (i % numberOfSets).ToString(), rnd.Next(), rnd.Next());
+                        redisDB.SortedSetAdd(keyPrefix + (i % numberOfSets).ToString(), rnd.Next(), rnd.Next());
                     }
                     else
                     {
-                        SenitnelMonitoredDB.SetAdd(keyPrefix + (i % numberOfSets).ToString(), rnd.Next());
+                        redisDB.SetAdd(keyPrefix + (i % numberOfSets).ToString(), rnd.Next());
                     } 
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -374,15 +374,15 @@ namespace RedisTester.Helpers
                 {
                     if (i % 2 == 0)
                     {
-                        var retreivedValue = SenitnelMonitoredDB.SetMembers(keyPrefix + (i % numberOfSets).ToString());
+                        var retreivedValue = redisDB.SetMembers(keyPrefix + (i % numberOfSets).ToString());
                     }
                     else
                     {
-                        long listLength = SenitnelMonitoredDB.SetLength(keyPrefix + (i % numberOfSets).ToString());
+                        long listLength = redisDB.SetLength(keyPrefix + (i % numberOfSets).ToString());
 
                         if (listLength > 0)
                         {
-                            SenitnelMonitoredDB.SetRandomMember(keyPrefix + (i % numberOfSets).ToString());
+                            redisDB.SetRandomMember(keyPrefix + (i % numberOfSets).ToString());
                         }
 
                     }
@@ -390,7 +390,7 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -411,20 +411,20 @@ namespace RedisTester.Helpers
             {
                 try
                 {
-                    long listLength = SenitnelMonitoredDB.SetLength(keyPrefix + (i % numberOfSets).ToString());
+                    long listLength = redisDB.SetLength(keyPrefix + (i % numberOfSets).ToString());
 
                     if (listLength == 0)
                     {
                         if (SortedSet)
                         {
-                            SenitnelMonitoredDB.SortedSetCombineAndStore(SetOperation.Union,
+                            redisDB.SortedSetCombineAndStore(SetOperation.Union,
                                                         keyPrefix + (i % numberOfSets).ToString(),
                                                         keyPrefix + (i + 1 % numberOfSets).ToString(),
                                                         keyPrefix + (i + 2 % numberOfSets).ToString());
                         }
                         else
                         {
-                            SenitnelMonitoredDB.SetCombineAndStore(SetOperation.Union,
+                            redisDB.SetCombineAndStore(SetOperation.Union,
                                                         keyPrefix + (i % numberOfSets).ToString(),
                                                         keyPrefix + (i + 1 % numberOfSets).ToString(), 
                                                         keyPrefix + (i + 2 % numberOfSets).ToString());
@@ -438,30 +438,30 @@ namespace RedisTester.Helpers
                     {
                         if (SortedSet)
                         {
-                            SenitnelMonitoredDB.SortedSetRemove(keyPrefix + (i % numberOfSets).ToString(),
-                                                        SenitnelMonitoredDB.SetRandomMember(keyPrefix + (i % numberOfSets).ToString()));
+                            redisDB.SortedSetRemove(keyPrefix + (i % numberOfSets).ToString(),
+                                                        redisDB.SetRandomMember(keyPrefix + (i % numberOfSets).ToString()));
                         }
                         else
                         {
-                            SenitnelMonitoredDB.SetRemove(keyPrefix + (i % numberOfSets).ToString(),
-                                                        SenitnelMonitoredDB.SetRandomMember(keyPrefix + (i % numberOfSets).ToString()));
+                            redisDB.SetRemove(keyPrefix + (i % numberOfSets).ToString(),
+                                                        redisDB.SetRandomMember(keyPrefix + (i % numberOfSets).ToString()));
                         }
                     }
                     else
                     {
                         if (SortedSet)
                         {
-                            SenitnelMonitoredDB.SortedSetPop(keyPrefix + (i % numberOfSets).ToString());
+                            redisDB.SortedSetPop(keyPrefix + (i % numberOfSets).ToString());
                         }
                         else
                         {
-                            SenitnelMonitoredDB.SetPop(keyPrefix + (i % numberOfSets).ToString());
+                            redisDB.SetPop(keyPrefix + (i % numberOfSets).ToString());
                         }
                     }
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -482,11 +482,11 @@ namespace RedisTester.Helpers
             {
                 try
                 {
-                    SenitnelMonitoredDB.KeyDelete(keyPrefix + i.ToString(), CommandFlags.DemandMaster);
+                    redisDB.KeyDelete(keyPrefix + i.ToString(), CommandFlags.DemandMaster);
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -506,16 +506,16 @@ namespace RedisTester.Helpers
 
     public class HashTestHelper : BasicTestHelper
     {
-        public HashTestHelper(ConnectionMultiplexer connectionMultiplexer)
+        public HashTestHelper(ConfiguratinHelper configHelper)
         {
-            this.connectionMultiplexer = connectionMultiplexer;
+            this.configurationHelper = configHelper;
         }
 
         public override TestResults RunTest(int testLoad)
         {
             TestResults testResult = new TestResults(testLoad);
             string keyPrefix = "thread:" + Thread.CurrentThread.ManagedThreadId + ":key:";
-            var SenitnelMonitoredDB = connectionMultiplexer.GetDatabase();
+            var redisDB = this.configurationHelper.GetRDBConnection().GetDatabase();
             Random rnd = new Random(DateTime.Now.Millisecond);
 
             // 2.Database write load
@@ -535,11 +535,11 @@ namespace RedisTester.Helpers
                         hashEntries[h] = new HashEntry("HE" + h.ToString(), rnd.Next());
                     }
 
-                    SenitnelMonitoredDB.HashSet(keyPrefix + i.ToString(), hashEntries);
+                    redisDB.HashSet(keyPrefix + i.ToString(), hashEntries);
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -562,22 +562,22 @@ namespace RedisTester.Helpers
                 {
                     if (i % 2 == 0)
                     {
-                        var retreivedValue = SenitnelMonitoredDB.HashGetAll(keyPrefix + i.ToString());
+                        var retreivedValue = redisDB.HashGetAll(keyPrefix + i.ToString());
                     }
                     else
                     {
-                        var hashKeys = SenitnelMonitoredDB.HashKeys(keyPrefix + i.ToString());
+                        var hashKeys = redisDB.HashKeys(keyPrefix + i.ToString());
 
                         if (hashKeys.Length > 0)
                         {
-                            var data = SenitnelMonitoredDB.HashGet(keyPrefix + i.ToString(), hashKeys[rnd.Next() % hashKeys.Length]);
+                            var data = redisDB.HashGet(keyPrefix + i.ToString(), hashKeys[rnd.Next() % hashKeys.Length]);
                         }
                     }
 
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -598,27 +598,27 @@ namespace RedisTester.Helpers
             {
                 try
                 {
-                    var hashKeys = SenitnelMonitoredDB.HashKeys(keyPrefix + i.ToString());
+                    var hashKeys = redisDB.HashKeys(keyPrefix + i.ToString());
 
                     if (hashKeys.Length == 0)
                     {
-                        SenitnelMonitoredDB.HashSet(keyPrefix + i.ToString(), new HashEntry[] 
+                        redisDB.HashSet(keyPrefix + i.ToString(), new HashEntry[] 
                                                     { new HashEntry(rnd.Next(), rnd.Next()), new HashEntry(rnd.Next(), rnd.Next())});
                         continue;
                     }
 
                     if (i % 2 == 0)
                     {
-                        SenitnelMonitoredDB.HashDelete(keyPrefix + i.ToString(), hashKeys[rnd.Next() % hashKeys.Length]);
+                        redisDB.HashDelete(keyPrefix + i.ToString(), hashKeys[rnd.Next() % hashKeys.Length]);
                     }
                     else
                     {
-                        SenitnelMonitoredDB.HashSet(keyPrefix + i.ToString(), new HashEntry[] { new HashEntry(hashKeys[rnd.Next() % hashKeys.Length], rnd.Next()) });
+                        redisDB.HashSet(keyPrefix + i.ToString(), new HashEntry[] { new HashEntry(hashKeys[rnd.Next() % hashKeys.Length], rnd.Next()) });
                     }
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -639,11 +639,11 @@ namespace RedisTester.Helpers
             {
                 try
                 {
-                    SenitnelMonitoredDB.KeyDelete(keyPrefix + i.ToString(), CommandFlags.DemandMaster);
+                    redisDB.KeyDelete(keyPrefix + i.ToString(), CommandFlags.DemandMaster);
                 }
                 catch (RedisConnectionException e)
                 {
-                    SenitnelMonitoredDB = SentinelConfigurationHelper.Reconnect().GetDatabase();
+                    redisDB = configurationHelper.Reconnect().GetDatabase();
                 }
             }
 
@@ -663,13 +663,13 @@ namespace RedisTester.Helpers
 
     public static class TestHelper
     {
-        public static void SimulateMasterFail(ConnectionMultiplexer connection, int testload)
+        public static void SimulateMasterFail(ConfiguratinHelper connection, int testload)
         {
             Random rnd = new Random(DateTime.Now.Millisecond);
 
             Thread.Sleep(rnd.Next() % (testload * 2) + 1);
 
-            SentinelConfigurationHelper.SimulateMasterFail(connection);
+            connection.SimulateMasterFail();
         }
 
         public static void AvrageOutResult(TestResults results, int parallelClients)

@@ -1,12 +1,20 @@
 ﻿using System.Collections.Generic;
 
-namespace RedisTester.Helpers
+namespace RedisTester.Models
 {
-    public class SentinelConfiguration
+    public class SentinelConfiguration : RedisDBConfiguration
+    {
+        public List<Address> SentinelAddresses { get; set; }
+    }
+
+    public class ClusterConfiguration : RedisDBConfiguration
+    {
+
+    }
+
+    public class RedisDBConfiguration
     {
         public List<Address> RedisAddresses { get; set; }
-
-        public List<Address> SentinelAddresses { get; set; }
 
         public string Password { get; set; }
 
@@ -21,4 +29,5 @@ namespace RedisTester.Helpers
 
         public int Port { get; set; }
     }
+
 }

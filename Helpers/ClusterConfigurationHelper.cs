@@ -1,40 +1,30 @@
 ﻿using System;
 using System.Linq;
 
-using RedisTester.Models;
-
-
 namespace RedisTester.Helpers
 {
-    public class SentinelConfigurationHelper : ConfiguratinHelper
+    public class ClusterConfigurationHelper : ConfiguratinHelper
     {
-        private new SentinelConfiguration rdbConfiguration { get; set; }
 
-        public SentinelConfigurationHelper(SentinelConfiguration config)
+        public ClusterConfigurationHelper(Models.ClusterConfiguration config)
         {
-            this.rdbConfiguration = config;
+            rdbConfiguration = config;
         }
 
         /// <summary>
-        /// Checks the validity of sentinel configuration.
+        /// Checks the validity of cluster configuration.
         /// </summary>
-        /// <param name="sentinelConfig">Populated config object.</param>
+        /// <param name="clusterConfig">Populated config object.</param>
         /// <returns></returns>
         public override bool IsConfigValid()
         {
             if (rdbConfiguration == null ||
-                rdbConfiguration.RedisAddresses == null || rdbConfiguration.RedisAddresses.Count() == 0 ||
-                rdbConfiguration.SentinelAddresses == null || rdbConfiguration.SentinelAddresses.Count() == 0)
+                rdbConfiguration.RedisAddresses == null || rdbConfiguration.RedisAddresses.Count() == 0)
             {
                 return false;
             }
 
             if (rdbConfiguration.RedisAddresses.Any(address => String.IsNullOrEmpty(address.IP) || address.Port <= 0))
-            {
-                return false;
-            }
-
-            if (rdbConfiguration.SentinelAddresses.Any(address => String.IsNullOrEmpty(address.IP) || address.Port <= 0))
             {
                 return false;
             }
