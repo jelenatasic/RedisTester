@@ -12,7 +12,7 @@ namespace RedisTester.Controllers
     public class SentinelController : Controller
     {
         private SentinelConfiguration sentinelConfiguration;
-        private ConfiguratinHelper sentinelConfigHelper;
+        private ConfigurationHelper sentinelConfigHelper;
 
         public SentinelController(IOptions<SentinelConfiguration> config)
         {
@@ -31,46 +31,21 @@ namespace RedisTester.Controllers
                 return tr;
             }
 
+            TestResults testResult;
+
             // Test
-            ITest testHelper;
+            ITest testHelper = TestHelper.GetTestBasedOnDatatype(datatype, sentinelConfigHelper);
 
-            switch (datatype.ToLower())
+            if (testHelper == null)
             {
-                case "string":
-                    {
-                        testHelper = new StringTestHelper(sentinelConfigHelper);
-                        break;
-                    }
-                case "list":
-                    {
-                        testHelper = new ListTestHelper(sentinelConfigHelper);
-                        break;
-                    }
-                case "set":
-                    {
-                        testHelper = new SetTestHelper(sentinelConfigHelper, false);
-                        break;
-                    }
-                case "sortedset":
-                    {
-                        testHelper = new SetTestHelper(sentinelConfigHelper, true);
-                        break;
-                    }
-                case "hash":
-                    {
-                        testHelper = new HashTestHelper(sentinelConfigHelper);
-                        break;
-                    }
-                default:
-                    {
-                        TestResults tr = new TestResults("Unknown redis data type.");
-                        return tr;
-                    }
+                testResult = new TestResults("Unknown redis data type.");
             }
+            else
+            {
+                testResult = testHelper.RunTest(testLoad);
 
-            var testResult  = testHelper.RunTest(testLoad);
-
-            testResult.TestStatus = "Successfull test. Test performed by one client.";
+                testResult.TestStatus = "Successfull test. Test performed by one client.";
+            }
 
             return testResult;
         }
@@ -88,47 +63,21 @@ namespace RedisTester.Controllers
             // Start thread that will shutdown master at some point
             var masterFailThread = new Thread(() => TestHelper.SimulateMasterFail(sentinelConfigHelper, testLoad));
             masterFailThread.Start();
+            TestResults testResult;
 
             // Test
-            ITest testHelper;
+            ITest testHelper = TestHelper.GetTestBasedOnDatatype(datatype, sentinelConfigHelper);
 
-            switch (datatype.ToLower())
+            if (testHelper == null)
             {
-                case "string":
-                    {
-                        testHelper = new StringTestHelper(sentinelConfigHelper);
-                        break;
-                    }
-                case "list":
-                    {
-                        testHelper = new ListTestHelper(sentinelConfigHelper);
-                        break;
-                    }
-                case "set":
-                    {
-                        testHelper = new SetTestHelper(sentinelConfigHelper, false);
-                        break;
-                    }
-                case "sortedset":
-                    {
-                        testHelper = new SetTestHelper(sentinelConfigHelper, true);
-                        break;
-                    }
-                case "hash":
-                    {
-                        testHelper = new HashTestHelper(sentinelConfigHelper);
-                        break;
-                    }
-                default:
-                    {
-                        TestResults tr = new TestResults("Unknown redis data type.");
-                        return tr;
-                    }
+                testResult = new TestResults("Unknown redis data type.");
             }
+            else
+            {
+                testResult = testHelper.RunTest(testLoad);
 
-            var testResult = testHelper.RunTest(testLoad);
-
-            testResult.TestStatus = "Successfull test. Test performed by one client.";
+                testResult.TestStatus = "Successfull test. Test performed by one client.";
+            }
 
             return testResult;
         }
@@ -152,45 +101,22 @@ namespace RedisTester.Controllers
             {
                 var clientConfigurationHelper = new SentinelConfigurationHelper(sentinelConfiguration);
 
-                switch (datatype.ToLower())
+                testHelpers[i] = TestHelper.GetTestBasedOnDatatype(datatype, clientConfigurationHelper);
+
+                if (testHelpers[i] == null)
                 {
-                    case "string":
-                        {
-                            testHelpers[i] = new StringTestHelper(clientConfigurationHelper);
-                            break;
-                        }
-                    case "list":
-                        {
-                            testHelpers[i] = new ListTestHelper(clientConfigurationHelper);
-                            break;
-                        }
-                    case "set":
-                        {
-                            testHelpers[i] = new SetTestHelper(clientConfigurationHelper, false);
-                            break;
-                        }
-                    case "sortedset":
-                        {
-                            testHelpers[i] = new SetTestHelper(clientConfigurationHelper, true);
-                            break;
-                        }
-                    case "hash":
-                        {
-                            testHelpers[i] = new HashTestHelper(clientConfigurationHelper);
-                            break;
-                        }
-                    default:
-                        {
-                            TestResults tr = new TestResults("Unknown redis data type.");
-                            return tr;
-                        }
+                    testResult = new TestResults("Unknown redis data type.");
                 }
+                else
+                {
+                    var test = testHelpers[i];
 
-                var test = testHelpers[i];
+                    clientThreads[i] = new Thread(() => test.RunParallelTest(testResult));
 
-                clientThreads[i] = new Thread(() => test.RunParallelTest(testResult));
+                    clientThreads[i].Start();
 
-                clientThreads[i].Start();
+                    testResult.TestStatus = "Successfull test. Test performed by one client.";
+                }
             }
 
             for (int i = 0; i < sentinelConfiguration.ParallelClientCount; i++)
@@ -233,45 +159,23 @@ namespace RedisTester.Controllers
             {
                 var clientConfigurationHelper = new SentinelConfigurationHelper(sentinelConfiguration);
 
-                switch (datatype.ToLower())
+
+                testHelpers[i] = TestHelper.GetTestBasedOnDatatype(datatype, clientConfigurationHelper);
+
+                if (testHelpers[i] == null)
                 {
-                    case "string":
-                        {
-                            testHelpers[i] = new StringTestHelper(clientConfigurationHelper);
-                            break;
-                        }
-                    case "list":
-                        {
-                            testHelpers[i] = new ListTestHelper(clientConfigurationHelper);
-                            break;
-                        }
-                    case "set":
-                        {
-                            testHelpers[i] = new SetTestHelper(clientConfigurationHelper, false);
-                            break;
-                        }
-                    case "sortedset":
-                        {
-                            testHelpers[i] = new SetTestHelper(clientConfigurationHelper, true);
-                            break;
-                        }
-                    case "hash":
-                        {
-                            testHelpers[i] = new HashTestHelper(clientConfigurationHelper);
-                            break;
-                        }
-                    default:
-                        {
-                            TestResults tr = new TestResults("Unknown redis data type.");
-                            return tr;
-                        }
+                    testResult = new TestResults("Unknown redis data type.");
                 }
+                else
+                {
+                    var test = testHelpers[i];
 
-                var test = testHelpers[i];
+                    clientThreads[i] = new Thread(() => test.RunParallelTest(testResult));
 
-                clientThreads[i] = new Thread(() => test.RunParallelTest(testResult));
+                    clientThreads[i].Start();
 
-                clientThreads[i].Start();
+                    testResult.TestStatus = "Successfull test. Test performed by one client.";
+                }
             }
 
             for (int i = 0; i < sentinelConfiguration.ParallelClientCount; i++)

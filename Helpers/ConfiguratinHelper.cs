@@ -5,7 +5,7 @@ using StackExchange.Redis;
 
 namespace RedisTester.Helpers
 {
-    public abstract class ConfiguratinHelper
+    public abstract class ConfigurationHelper
     {
         private object _lock = new object();
 

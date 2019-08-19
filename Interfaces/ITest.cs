@@ -3,7 +3,7 @@ using StackExchange.Redis;
 
 namespace RedisTester.Interfaces
 {
-    interface ITest
+    public interface ITest
     {
         TestResults RunTest(int testLoad);
 

@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace RedisTester.Helpers
 {
-    public class ClusterConfigurationHelper : ConfiguratinHelper
+    public class ClusterConfigurationHelper : ConfigurationHelper
     {
 
         public ClusterConfigurationHelper(Models.ClusterConfiguration config)

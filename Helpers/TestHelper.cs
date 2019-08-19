@@ -10,7 +10,7 @@ namespace RedisTester.Helpers
 {
     public abstract class BasicTestHelper : ITest
     {
-        protected ConfiguratinHelper configurationHelper { get; set; }
+        protected ConfigurationHelper configurationHelper { get; set; }
 
         public void RunParallelTest(TestResults testResults)
         {
@@ -33,7 +33,7 @@ namespace RedisTester.Helpers
 
     public class StringTestHelper : BasicTestHelper
     {
-        public StringTestHelper(ConfiguratinHelper configHelper)
+        public StringTestHelper(ConfigurationHelper configHelper)
         {
             this.configurationHelper = configHelper;
         }
@@ -160,7 +160,7 @@ namespace RedisTester.Helpers
 
     public class ListTestHelper : BasicTestHelper
     {
-        public ListTestHelper(ConfiguratinHelper configHelper)
+        public ListTestHelper(ConfigurationHelper configHelper)
         {
             this.configurationHelper = configHelper;
         }
@@ -318,7 +318,7 @@ namespace RedisTester.Helpers
     {
         private bool SortedSet { get; set; }
 
-        public SetTestHelper(ConfiguratinHelper configHelper, bool sorted)
+        public SetTestHelper(ConfigurationHelper configHelper, bool sorted)
         {
             this.configurationHelper = configHelper;
             this.SortedSet = sorted;
@@ -506,7 +506,7 @@ namespace RedisTester.Helpers
 
     public class HashTestHelper : BasicTestHelper
     {
-        public HashTestHelper(ConfiguratinHelper configHelper)
+        public HashTestHelper(ConfigurationHelper configHelper)
         {
             this.configurationHelper = configHelper;
         }
@@ -663,7 +663,7 @@ namespace RedisTester.Helpers
 
     public static class TestHelper
     {
-        public static void SimulateMasterFail(ConfiguratinHelper connection, int testload)
+        public static void SimulateMasterFail(ConfigurationHelper connection, int testload)
         {
             Random rnd = new Random(DateTime.Now.Millisecond);
 
@@ -678,6 +678,47 @@ namespace RedisTester.Helpers
             results.TestParams.ReadTime /= parallelClients;
             results.TestParams.UpdateTime /= parallelClients;
             results.TestParams.RemoveTime /= parallelClients;
+        }
+
+        public static ITest GetTestBasedOnDatatype(string datatype, ConfigurationHelper configHelper)
+        {
+            ITest testHelper;
+
+            switch (datatype.ToLower())
+            {
+                case "string":
+                    {
+                        testHelper = new StringTestHelper(configHelper);
+                        break;
+                    }
+                case "list":
+                    {
+                        testHelper = new ListTestHelper(configHelper);
+                        break;
+                    }
+                case "set":
+                    {
+                        testHelper = new SetTestHelper(configHelper, false);
+                        break;
+                    }
+                case "sortedset":
+                    {
+                        testHelper = new SetTestHelper(configHelper, true);
+                        break;
+                    }
+                case "hash":
+                    {
+                        testHelper = new HashTestHelper(configHelper);
+                        break;
+                    }
+                default:
+                    {
+                        testHelper = null;
+                        break;
+                    }
+            }
+
+            return testHelper;
         }
     }
 }

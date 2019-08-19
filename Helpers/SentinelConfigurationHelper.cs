@@ -6,7 +6,7 @@ using RedisTester.Models;
 
 namespace RedisTester.Helpers
 {
-    public class SentinelConfigurationHelper : ConfiguratinHelper
+    public class SentinelConfigurationHelper : ConfigurationHelper
     {
         private new SentinelConfiguration rdbConfiguration { get; set; }
 
