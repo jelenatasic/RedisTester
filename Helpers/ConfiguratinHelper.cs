@@ -137,6 +137,7 @@ namespace RedisTester.Helpers
                 if (server.IsConnected && !server.IsSlave)
                 {
                     server.Shutdown();
+                    return;
                 }
             }
         }

@@ -56,7 +56,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if(configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -77,11 +90,25 @@ namespace RedisTester.Helpers
             {
                 try
                 {
-                    var retreivedValue = redisDB.StringGet(keyPrefix + i.ToString(), CommandFlags.DemandSlave);
+                    var retreivedValue = redisDB.StringGet(keyPrefix + i.ToString());
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    //library problem!!! threaad sleep needed on order for library to reconfigure properly
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -115,7 +142,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -140,7 +180,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -193,7 +246,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -231,7 +297,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -271,7 +350,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -296,7 +388,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -352,7 +457,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -390,7 +508,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -461,7 +592,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -486,7 +630,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -539,7 +696,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -577,7 +747,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -618,7 +801,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 
@@ -643,7 +839,20 @@ namespace RedisTester.Helpers
                 }
                 catch (RedisConnectionException e)
                 {
-                    redisDB = configurationHelper.Reconnect().GetDatabase();
+                    if (configurationHelper.GetType() == typeof(ClusterConfigurationHelper))
+                    {
+                        Thread.Sleep(1000);
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        redisDB = configurationHelper.Reconnect().GetDatabase();
+                    }
+
+                }
+                catch (Exception e)
+                {
                 }
             }
 

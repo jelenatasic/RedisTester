@@ -13,11 +13,18 @@ namespace RedisTester.Controllers
         {
             return new string[] 
             {
+                "SENTIEL TESTS:",
                 "/api/sentinel/singleclient/{datatype}/{testLoad}",
                 "/api/sentinel/singleclient/failover/{datatype}/{testLoad}",
                 "/api/sentinel/multipleclients/{datatype}/{testLoad}",
                 "/api/sentinel/multipleclients/failover/{datatype}/{testLoad}",
-                "/api/sentinel/flush"
+                "/api/sentinel/flush",
+                "CLUSTER TESTS:",
+                "/api/cluster/singleclient/{datatype}/{testLoad}",
+                "/api/cluster/singleclient/failover/{datatype}/{testLoad}",
+                "/api/cluster/multipleclients/{datatype}/{testLoad}",
+                "/api/cluster/multipleclients/failover/{datatype}/{testLoad}",
+                "/api/cluster/flush"
             };
         }
     }
